@@ -21,11 +21,12 @@ doc = fitz.open(PDF_PATH)
 chunks = []
 metadata = []
 
-# === Track current weather section and country ===
+# Track current weather and country
 current_weather = ""
 current_country = ""
+section_buffer = []
 
-print(f"Processing {len(doc)} pages in the PDF...")
+print(f"--->>>Processing {len(doc)} pages from PDF...")
 
 for page in doc:
     lines = page.get_text().split('\n')
@@ -33,33 +34,59 @@ for page in doc:
     for line in lines:
         line = line.strip()
 
-        if not line:
-            continue
-
-        # Detect weather section headers like "1. Sunny Weather"
+        # Detect weather headers like "1. Sunny Weather"
         if re.match(r'^\d+\.\s+(Sunny|Rainy|Snowy|Windy)\s+Weather', line):
+            if section_buffer:
+                # Save the previous section before changing
+                joined_text = " ".join(section_buffer).strip()
+                full_context = f"{current_country}, {current_weather}:\n{joined_text}"
+                chunks.append(full_context)
+                metadata.append({
+                    "country": current_country,
+                    "weather": current_weather,
+                    "text": full_context
+                })
+                section_buffer = []
+
             current_weather = line
             continue
 
-        # Detect country names like "USA (California):"
+        # Detect country like "USA (California):"
         if re.match(r'^[A-Z][a-zA-Z0-9\s\-\'\.()]+:$', line):
+            if section_buffer:
+                # Save previous section
+                joined_text = " ".join(section_buffer).strip()
+                full_context = f"{current_country}, {current_weather}:\n{joined_text}"
+                chunks.append(full_context)
+                metadata.append({
+                    "country": current_country,
+                    "weather": current_weather,
+                    "text": full_context
+                })
+                section_buffer = []
+
             current_country = line.replace(":", "").strip()
             continue
 
-        # Add full labeled context for semantic clarity (bonus tip)
-        if current_country and current_weather:
-            text_with_context = f"{current_country}, {current_weather}:\n{line}"
-            chunks.append(text_with_context)
-            metadata.append({
-                "country": current_country,
-                "weather": current_weather,
-                "preview": line[:100] + "..."
-            })
+        # Add normal content
+        if current_country and current_weather and line:
+            section_buffer.append(line)
 
-print(f"--->>Collected {len(chunks)} valid chunks for embedding.")
+# Save any final buffer at the end
+if section_buffer:
+    joined_text = " ".join(section_buffer).strip()
+    full_context = f"{current_country}, {current_weather}:\n{joined_text}"
+    chunks.append(full_context)
+    metadata.append({
+        "country": current_country,
+        "weather": current_weather,
+        "text": full_context
+    })
+
+print(f"--->>>Collected {len(chunks)} full content chunks.")
 
 # === Generate Embeddings ===
-print("---->>Generating embeddings...")
+print("--->>> Generating embeddings...")
 embeddings = model.encode(chunks, show_progress_bar=True)
 
 # === Create FAISS Index ===
@@ -72,4 +99,3 @@ faiss.write_index(index, INDEX_PATH)
 with open(METADATA_PATH, "w", encoding="utf-8") as f:
     json.dump(metadata, f, indent=2)
 
-print("--->>FAISS index and metadata saved successfully.")
