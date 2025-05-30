@@ -1,11 +1,6 @@
-from dotenv import load_dotenv
-import os
+import streamlit as st
 
-load_dotenv()
-
-OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
-COHERE_API_KEY = os.getenv("COHERE_API_KEY")
-COHERE_MODEL = os.getenv("COHERE_MODEL", "command-r")
-TOP_K_RESULTS = int(os.getenv("TOP_K_RESULTS", 2))
-
-print("✅ API keys loaded")
+OPENWEATHER_API_KEY = st.secrets["OPENWEATHER_API_KEY"]
+COHERE_API_KEY = st.secrets["COHERE_API_KEY"]
+COHERE_MODEL = st.secrets.get("COHERE_MODEL", "command-r")
+TOP_K_RESULTS = int(st.secrets.get("TOP_K_RESULTS", 2))

@@ -1,5 +1,8 @@
-# This is a requirements file for a Python project.
-# It lists the packages required for the project.
-# To install the packages, run: pip install -r requirements.txt
 streamlit
 requests
+openai
+cohere
+faiss-cpu
+sentence-transformers
+PyMuPDF
+python-dotenv
