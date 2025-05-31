@@ -30,7 +30,7 @@ if st.button("Get Recommendation"):
         with st.spinner("🔍 Retrieving weather and knowledge..."):
 
             # 1. Get live weather
-            weather = get_weather(location)
+            weather = get_weather(location.strip())
             if "error" in weather:
                 st.error(f"Weather API Error: {weather['error']}")
             else:
